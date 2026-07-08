@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soporte Técnico – Sistema Completo</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg: #f1f3f4;
+      --card-bg: #ffffff;
+      --text: #202124;
+      --text-secondary: #5f6368;
+      --border: #dadce0;
+      --primary: #1a73e8;
+      --primary-hover: #1557b0;
+      --success: #0d904f;
+      --success-hover: #0a6e3d;
+      --danger: #d93025;
+      --danger-hover: #a50e0e;
+      --warning: #f9ab00;
+      --shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
+      --navbar-bg: #ffffff;
+      --table-header-bg: #f8f9fa;
+    }
+    body.dark-mode {
+      --bg: #1e1e2f;
+      --card-bg: #2a2a3c;
+      --text: #e8eaed;
+      --text-secondary: #b0b3b8;
+      --border: #44464a;
+      --primary: #8ab4f8;
+      --primary-hover: #aecbfa;
+      --success: #34a853;
+      --success-hover: #2d9249;
+      --danger: #f28b82;
+      --danger-hover: #ea5b4f;
+      --warning: #fdd663;
+      --shadow: 0 1px 3px rgba(0,0,0,0.4);
+      --navbar-bg: #2a2a3c;
+      --table-header-bg: #3a3a4a;
+    }
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      margin: 0;
+      transition: background 0.3s, color 0.3s;
+    }
+    .hidden { display: none !important; }
+    .card-formal {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+    .navbar-formal {
+      background: var(--navbar-bg);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      border-bottom: 1px solid var(--border);
+      padding: 0.5rem 1rem;
+    }
+    .navbar-formal .navbar-brand { color: var(--primary); font-weight: 600; }
+    .nav-tabs .nav-link { color: var(--text-secondary); border: none; border-radius: 8px; }
+    .nav-tabs .nav-link.active { background: #e8f0fe; color: var(--primary); }
+    body.dark-mode .nav-tabs .nav-link.active { background: rgba(138,180,248,0.15); }
+    .btn-primary { background: var(--primary); border: none; border-radius: 8px; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-success { background: var(--success); border: none; border-radius: 8px; }
+    .btn-success:hover { background: var(--success-hover); }
+    .btn-outline-primary { border: 1px solid var(--primary); color: var(--primary); background: transparent; border-radius: 8px; }
+    .form-control, .form-select {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.6rem 0.8rem;
+      background: var(--card-bg);
+      color: var(--text);
+    }
+    .form-control:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,115,232,0.2); }
+    .table-formal { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--text); }
+    .table-formal th { background: var(--table-header-bg); color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid var(--border); padding: 0.75rem 1rem; }
+    .table-formal td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
+    .alert-panel { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+    .alert-card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); padding: 1.2rem; min-width: 280px; flex: 1 1 300px; border-left: 5px solid; }
+    .alert-card.normal { border-left-color: var(--success); }
+    .alert-card.urgente { border-left-color: var(--warning); }
+    .alert-card.muy-urgente { border-left-color: var(--danger); }
+    .priority-badge { display: inline-block; padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .alert-card.normal .priority-badge { background: #e6f4ea; color: #0d904f; }
+    .alert-card.urgente .priority-badge { background: #fef7e0; color: #ea8600; }
+    .alert-card.muy-urgente .priority-badge { background: #fce8e6; color: #c5221f; }
+    body.dark-mode .alert-card.normal .priority-badge { background: rgba(52,168,83,0.2); color: #81c995; }
+    body.dark-mode .alert-card.urgente .priority-badge { background: rgba(253,214,99,0.2); color: #ffda6a; }
+    body.dark-mode .alert-card.muy-urgente .priority-badge { background: rgba(242,139,130,0.2); color: #f28b82; }
+    .login-container { max-width: 450px; margin: 60px auto; }
+    .theme-toggle { background: none; border: 1px solid var(--border); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text); }
+    .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1050; }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div id="auth-container" class="container">
+    <!-- ... (mismo login que antes, sin cambios) ... -->
+    <div class="login-container">
+      <div class="card-formal text-center">
+        <div class="mb-3"><i class="bi bi-headset" style="font-size: 2.5rem; color: var(--primary);"></i></div>
+        <h3 style="font-weight:600;">Soporte Técnico</h3>
+        <div id="connection-status" class="mb-3 small"></div>
+        <ul class="nav nav-pills justify-content-center mb-3">
+          <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#login">Iniciar Sesión</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#register">Registrarse</button></li>
+        </ul>
+        <div class="tab-content">
+          <div class="tab-pane fade show active" id="login">
+            <div class="mb-3 text-start"><label class="form-label">Correo electrónico</label><input type="email" id="login-email" class="form-control" placeholder="correo@ejemplo.com"></div>
+            <div class="mb-3 text-start"><label class="form-label">Contraseña (DNI)</label><input type="password" id="login-password" class="form-control" placeholder="12345678" maxlength="8"></div>
+            <button class="btn btn-primary w-100" id="login-btn">Ingresar</button>
+            <div id="login-error" class="text-danger mt-2 small"></div>
+          </div>
+          <div class="tab-pane fade" id="register">
+            <div class="mb-3 text-start"><label class="form-label">Correo electrónico</label><input type="email" id="reg-email" class="form-control" placeholder="correo@ejemplo.com"></div>
+            <div class="mb-3 text-start"><label class="form-label">DNI (8 dígitos)</label><input type="text" id="reg-dni" class="form-control" placeholder="12345678" maxlength="8"></div>
+            <button class="btn btn-success w-100" id="register-btn">Crear cuenta</button>
+            <div id="reg-error" class="text-danger mt-2 small"></div>
+          </div>
+        </div>
+        <div class="mt-4 pt-3 border-top">
+          <p class="text-muted small fw-bold mb-2">Accesos Rápidos</p>
+          <div class="d-flex flex-wrap gap-2 justify-content-center">
+            <a href="https://correo.policia.gob.pe/owa/auth/logon.aspx" target="_blank" class="btn btn-outline-primary btn-sm">Correo PNP</a>
+            <a href="https://sgd.policia.gob.pe/sgd/login.do" target="_blank" class="btn btn-outline-primary btn-sm">SGD PNP</a>
+            <a href="https://sigcp.policia.gob.pe/" target="_blank" class="btn btn-outline-primary btn-sm">SIGCP PNP</a>
+            <a href="https://sigesapol.dirsapolpnp.gob.pe/auth/login" target="_blank" class="btn btn-outline-primary btn-sm">SIGESAPOL</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="app-container" class="hidden">
+    <nav class="navbar-formal">
+      <div class="container d-flex justify-content-between align-items-center">
+        <span class="navbar-brand"><i class="bi bi-clipboard-check me-2"></i>Soporte Técnico</span>
+        <div class="d-flex align-items-center gap-3">
+          <span id="user-info" class="text-secondary"></span>
+          <button id="theme-toggle-btn" class="theme-toggle" title="Cambiar tema"><i class="bi bi-moon-fill"></i></button>
+          <button class="btn btn-outline-primary btn-sm" id="logout-btn">Salir</button>
+        </div>
+      </div>
+    </nav>
+    <div class="container py-4">
+      <div id="alertas-mural" class="alert-panel"></div>
+      <ul class="nav nav-tabs mb-4">
+        <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#atencion"><i class="bi bi-plus-circle me-1"></i>Nueva Atención</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#historial"><i class="bi bi-list-ul me-1"></i>Historial</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#mural"><i class="bi bi-pin-map me-1"></i>Mural</button></li>
+        <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#reporte"><i class="bi bi-file-earmark-spreadsheet me-1"></i>Exportar</button></li>
+      </ul>
+      <div class="tab-content">
+        <!-- Formulario Atención -->
+        <div class="tab-pane fade show active" id="atencion">
+          <div class="card-formal">
+            <h4 id="form-title" class="mb-3" style="font-weight:600;">Nueva Atención</h4>
+            <form id="form-atencion">
+              <input type="hidden" id="servicio" value="Soporte Técnico">
+              <input type="hidden" id="edit-id" value="">
+              <input type="hidden" id="mural-id" value="">
+              <div class="row g-3 mb-3">
+                <div class="col-md-6"><label class="form-label">Unidad / Departamento</label><input type="text" class="form-control" id="unidad" required></div>
+                <div class="col-md-6"><label class="form-label">Fecha</label><div class="input-group"><input type="date" class="form-control" id="fecha" required><button class="btn btn-outline-secondary" type="button" id="btn-hoy">Hoy</button></div></div>
+              </div>
+              <div class="mb-3"><label class="form-label">Actividad realizada</label><textarea class="form-control" id="actividad" rows="3" required spellcheck="true" lang="es"></textarea></div>
+              <div class="row g-3 mb-3">
+                <div class="col-md-6"><label class="form-label">Prioridad</label><select class="form-select" id="prioridad"><option value="Normal">Normal</option><option value="Urgente">Urgente</option><option value="Muy Urgente">Muy Urgente</option></select></div>
+                <div class="col-md-6"><label class="form-label">Estado</label><select class="form-select" id="estado"><option value="Atendido">Atendido</option><option value="Revisado">Revisado</option><option value="Verificado">Verificado</option></select></div>
+              </div>
+              <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary" id="submit-btn">Guardar</button>
+                <button type="button" class="btn btn-outline-secondary d-none" id="cancel-btn">Cancelar</button>
+              </div>
+              <div id="msg-atencion" class="mt-2 small"></div>
+            </form>
+          </div>
+        </div>
+        <!-- Historial -->
+        <div class="tab-pane fade" id="historial">
+          <div class="card-formal">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h4 class="mb-0" style="font-weight:600;">Mis Atenciones</h4>
+              <!-- Filtro de fechas -->
+              <div class="d-flex align-items-center gap-2">
+                <label class="form-label mb-0">Desde:</label>
+                <input type="date" id="filtro-desde" class="form-control form-control-sm" style="width:150px;">
+                <label class="form-label mb-0">Hasta:</label>
+                <input type="date" id="filtro-hasta" class="form-control form-control-sm" style="width:150px;">
+                <button class="btn btn-sm btn-outline-primary" id="btn-filtrar"><i class="bi bi-funnel me-1"></i>Filtrar</button>
+                <button class="btn btn-sm btn-outline-secondary" id="btn-limpiar-filtro">Limpiar</button>
+              </div>
+            </div>
+            <div id="lista-atenciones"></div>
+          </div>
+        </div>
+        <!-- Mural -->
+        <div class="tab-pane fade" id="mural">
+          <div class="card-formal">
+            <h4 class="mb-3" style="font-weight:600;">Publicar en el Mural</h4>
+            <form id="form-mural">
+              <div class="mb-3"><label class="form-label">Nota</label><input type="text" id="contenido-mural" class="form-control" placeholder="Escribe una nota..." required></div>
+              <div class="mb-3"><label class="form-label">Prioridad</label><select class="form-select" id="prioridad-mural"><option value="Normal">Normal</option><option value="Urgente">Urgente</option><option value="Muy Urgente">Muy Urgente</option></select></div>
+              <button type="submit" class="btn btn-primary">Publicar</button>
+            </form>
+          </div>
+        </div>
+        <!-- Exportar -->
+        <div class="tab-pane fade" id="reporte">
+          <div class="card-formal">
+            <h4 class="mb-3" style="font-weight:600;">Exportar Atenciones</h4>
+            <p class="text-secondary">Selecciona el rango de fechas y descarga el reporte en Excel.</p>
+            <div class="row g-3 mb-3">
+              <div class="col-md-5">
+                <label class="form-label">Desde:</label>
+                <input type="date" id="exp-desde" class="form-control">
+              </div>
+              <div class="col-md-5">
+                <label class="form-label">Hasta:</label>
+                <input type="date" id="exp-hasta" class="form-control">
+              </div>
+              <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-success w-100" id="btn-xlsx"><i class="bi bi-download me-1"></i>Descargar</button>
+              </div>
+            </div>
+            <small class="text-muted">Si no selecciona fechas, se exportarán todas las atenciones.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast de notificaciones -->
+  <div class="toast-container">
+    <div id="liveToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="d-flex">
+        <div class="toast-body" id="toast-message"></div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // ==================== CONFIGURACIÓN ====================
+    const SUPABASE_URL = 'https://ehonufkjsyrytgoramgg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_-lpXWdjSUS1TDUQYUuhtlQ_veWqhDl6';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const authContainer = document.getElementById('auth-container');
+    const appContainer = document.getElementById('app-container');
+    const userInfo = document.getElementById('user-info');
+    const statusDiv = document.getElementById('connection-status');
+    let currentUser = null;
+
+    // ==================== TEMA ====================
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    function setTheme(isDark) {
+      if (isDark) {
+        document.body.classList.add('dark-mode');
+        themeToggleBtn.innerHTML = '<i class="bi bi-sun-fill"></i>';
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.body.classList.remove('dark-mode');
+        themeToggleBtn.innerHTML = '<i class="bi bi-moon-fill"></i>';
+        localStorage.setItem('theme', 'light');
+      }
+    }
+    // Por defecto, tema claro
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') setTheme(true);
+    else setTheme(false); // Si no hay preferencia, claro
+    themeToggleBtn.addEventListener('click', () => setTheme(!document.body.classList.contains('dark-mode')));
+
+    // ==================== TOAST DE NOTIFICACIÓN ====================
+    const toastElement = document.getElementById('liveToast');
+    const toastMessage = document.getElementById('toast-message');
+    const bsToast = new bootstrap.Toast(toastElement, { delay: 3000 });
+    function showToast(message, type = 'success') {
+      toastMessage.textContent = message;
+      toastElement.className = `toast align-items-center text-bg-${type} border-0`;
+      bsToast.show();
+    }
+
+    // ==================== CONEXIÓN ====================
+    (async () => {
+      statusDiv.innerHTML = '<span class="text-muted">Verificando conexión...</span>';
+      try {
+        const { error } = await supabaseClient.auth.getSession();
+        if (error) throw error;
+        statusDiv.innerHTML = '<span class="text-success">Conectado</span>';
+      } catch (err) { statusDiv.innerHTML = `<span class="text-danger">Error: ${err.message}</span>`; }
+    })();
+
+    // ==================== AUTENTICACIÓN ====================
+    async function login() {
+      const email = document.getElementById('login-email').value.trim();
+      const password = document.getElementById('login-password').value.trim();
+      const errorDiv = document.getElementById('login-error');
+      errorDiv.textContent = '';
+      if (!email || !password) { errorDiv.textContent = 'Complete todos los campos.'; return; }
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) errorDiv.textContent = 'Credenciales incorrectas';
+    }
+
+    async function register() {
+      const email = document.getElementById('reg-email').value.trim();
+      const dni = document.getElementById('reg-dni').value.trim();
+      const errorDiv = document.getElementById('reg-error');
+      errorDiv.textContent = '';
+      if (!email || !dni || dni.length !== 8) { errorDiv.textContent = 'Ingrese un correo válido y DNI de 8 dígitos.'; return; }
+      const { error } = await supabaseClient.auth.signUp({ email, password: dni, options: { data: { dni: dni } } });
+      if (error) errorDiv.textContent = 'Error al registrar.';
+      else { alert('Cuenta creada. Ahora inicie sesión.'); document.querySelector('[data-bs-target="#login"]').click(); }
+    }
+
+    async function logout() { await supabaseClient.auth.signOut(); }
+
+    function mostrarDashboard(user) {
+      currentUser = user;
+      userInfo.textContent = `DNI: ${user.user_metadata?.dni || ''}`;
+      authContainer.classList.add('hidden');
+      appContainer.classList.remove('hidden');
+      cargarAlertasMural();
+      cargarHistorial(); // cargará con el filtro por defecto (todas)
+      // Inicializar fechas del filtro con valores vacíos (para mostrar todas)
+      document.getElementById('filtro-desde').value = '';
+      document.getElementById('filtro-hasta').value = '';
+    }
+
+    function ocultarDashboard() {
+      authContainer.classList.remove('hidden');
+      appContainer.classList.add('hidden');
+      currentUser = null;
+    }
+
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      if (session?.user) mostrarDashboard(session.user);
+      else ocultarDashboard();
+    });
+
+    (async () => {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session?.user) mostrarDashboard(session.user);
+    })();
+
+    document.getElementById('login-btn').addEventListener('click', login);
+    document.getElementById('register-btn').addEventListener('click', register);
+    document.getElementById('logout-btn').addEventListener('click', logout);
+
+    // ==================== FUNCIONES AUXILIARES ====================
+    function formatearFecha(fechaStr) {
+      if (!fechaStr) return '';
+      const [year, month, day] = fechaStr.split('-');
+      return `${day}/${month}/${year}`;
+    }
+    function getFechaHoy() {
+      const hoy = new Date();
+      const dia = String(hoy.getDate()).padStart(2, '0');
+      const mes = String(hoy.getMonth() + 1).padStart(2, '0');
+      const anio = hoy.getFullYear();
+      return `${anio}-${mes}-${dia}`;
+    }
+
+    // ==================== ATENCIONES ====================
+    const formAtencion = document.getElementById('form-atencion');
+    const editIdInput = document.getElementById('edit-id');
+    const muralIdInput = document.getElementById('mural-id');
+    const servicioInput = document.getElementById('servicio');
+    const unidadInput = document.getElementById('unidad');
+    const actividadInput = document.getElementById('actividad');
+    const fechaInput = document.getElementById('fecha');
+    const prioridadInput = document.getElementById('prioridad');
+    const estadoInput = document.getElementById('estado');
+    const submitBtn = document.getElementById('submit-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const formTitle = document.getElementById('form-title');
+    const msgDiv = document.getElementById('msg-atencion');
+
+    fechaInput.max = getFechaHoy();
+    document.getElementById('btn-hoy').addEventListener('click', () => { fechaInput.value = getFechaHoy(); });
+
+    function setFechaPorDefecto() { if (!editIdInput.value) fechaInput.value = getFechaHoy(); }
+    setFechaPorDefecto();
+
+    function setEditMode(atencion) {
+      editIdInput.value = atencion.id;
+      unidadInput.value = atencion.unidad_departamento || '';
+      actividadInput.value = atencion.actividad || '';
+      fechaInput.value = atencion.fecha || getFechaHoy();
+      prioridadInput.value = atencion.prioridad || 'Normal';
+      estadoInput.value = atencion.estado || 'Atendido';
+      servicioInput.value = 'Soporte Técnico';
+      muralIdInput.value = '';
+      formTitle.textContent = 'Editar Atención';
+      submitBtn.textContent = 'Actualizar';
+      cancelBtn.classList.remove('d-none');
+    }
+
+    function resetForm() {
+      editIdInput.value = '';
+      muralIdInput.value = '';
+      formAtencion.reset();
+      servicioInput.value = 'Soporte Técnico';
+      prioridadInput.value = 'Normal';
+      estadoInput.value = 'Atendido';
+      formTitle.textContent = 'Nueva Atención';
+      submitBtn.textContent = 'Guardar';
+      cancelBtn.classList.add('d-none');
+      msgDiv.innerHTML = '';
+      setFechaPorDefecto();
+    }
+
+    cancelBtn.addEventListener('click', resetForm);
+
+    formAtencion.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const unidad = unidadInput.value.trim();
+      const actividad = actividadInput.value.trim(); // respeta mayúsculas/minúsculas
+      const fecha = fechaInput.value;
+      const prioridad = prioridadInput.value;
+      const estado = estadoInput.value;
+      const editId = editIdInput.value;
+      const muralId = muralIdInput.value;
+      const servicio = servicioInput.value;
+
+      if (!unidad || !actividad || !fecha) {
+        msgDiv.innerHTML = '<span class="text-danger">Complete todos los campos.</span>';
+        return;
+      }
+      if (new Date(fecha) > new Date().setHours(0,0,0,0)) {
+        msgDiv.innerHTML = '<span class="text-danger">No se permiten fechas futuras.</span>';
+        return;
+      }
+      if (!currentUser) return;
+
+      const datos = {
+        servicio: servicio,
+        unidad_departamento: unidad,
+        actividad: actividad,
+        fecha: fecha,
+        prioridad: prioridad,
+        estado: estado,
+        user_id: currentUser.id
+      };
+
+      let error = null;
+      let mensaje = '';
+      if (editId) {
+        const { error: updateError } = await supabaseClient
+          .from('atenciones')
+          .update(datos)
+          .eq('id', editId)
+          .eq('user_id', currentUser.id);
+        error = updateError;
+        mensaje = '✅ Atención actualizada correctamente.';
+      } else {
+        const { error: insertError } = await supabaseClient
+          .from('atenciones')
+          .insert([datos]);
+        error = insertError;
+        mensaje = '✅ Atención registrada correctamente.';
+      }
+
+      if (error) {
+        msgDiv.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+        showToast('Error al guardar: ' + error.message, 'danger');
+      } else {
+        if (muralId) await supabaseClient.from('mural').delete().eq('id', muralId);
+        msgDiv.innerHTML = `<span class="text-success">${mensaje}</span>`;
+        showToast(mensaje.replace('✅ ', ''), 'success');
+        resetForm();
+        cargarAlertasMural();
+        cargarHistorial(); // respetará el filtro actual
+      }
+    });
+
+    async function eliminarAtencion(id) {
+      if (!confirm('¿Eliminar esta atención?')) return;
+      const { error } = await supabaseClient.from('atenciones').delete().eq('id', id).eq('user_id', currentUser.id);
+      if (error) {
+        showToast('Error al eliminar: ' + error.message, 'danger');
+      } else {
+        showToast('🗑️ Atención eliminada.', 'warning');
+        cargarHistorial();
+      }
+    }
+
+    // ==================== HISTORIAL CON FILTRO ====================
+    async function cargarHistorial(filtroDesde = null, filtroHasta = null) {
+      if (!currentUser) return;
+      let query = supabaseClient
+        .from('atenciones')
+        .select('*')
+        .order('fecha', { ascending: false });
+
+      // Aplicar filtros si se proporcionan (o leer de los campos)
+      const desde = filtroDesde || document.getElementById('filtro-desde').value;
+      const hasta = filtroHasta || document.getElementById('filtro-hasta').value;
+      if (desde) query = query.gte('fecha', desde);
+      if (hasta) query = query.lte('fecha', hasta);
+
+      const { data, error } = await query;
+      const contenedor = document.getElementById('lista-atenciones');
+      if (error) { contenedor.innerHTML = '<p class="text-danger">Error</p>'; return; }
+      if (!data.length) { contenedor.innerHTML = '<p class="text-muted">No hay atenciones en este rango.</p>'; return; }
+
+      let html = `<table class="table-formal"><thead><tr><th>Fecha</th><th>Unidad</th><th>Actividad</th><th>Prioridad</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>`;
+      data.forEach(row => {
+        html += `<tr>
+          <td>${formatearFecha(row.fecha)}</td>
+          <td>${row.unidad_departamento}</td>
+          <td>${row.actividad}</td>
+          <td>${row.prioridad || 'Normal'}</td>
+          <td>${row.estado || 'Atendido'}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary edit-btn" data-id="${row.id}"><i class="bi bi-pencil me-1"></i>Editar</button>
+            <button class="btn btn-sm btn-danger delete-btn" data-id="${row.id}"><i class="bi bi-trash me-1"></i>Eliminar</button>
+          </td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      contenedor.innerHTML = html;
+
+      // Eventos
+      contenedor.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const atencion = data.find(item => item.id === this.getAttribute('data-id'));
+          if (atencion) {
+            document.querySelector('[data-bs-target="#atencion"]').click();
+            setEditMode(atencion);
+          }
+        });
+      });
+      contenedor.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function() { eliminarAtencion(this.getAttribute('data-id')); });
+      });
+    }
+
+    // Botones de filtro
+    document.getElementById('btn-filtrar').addEventListener('click', () => {
+      cargarHistorial();
+    });
+    document.getElementById('btn-limpiar-filtro').addEventListener('click', () => {
+      document.getElementById('filtro-desde').value = '';
+      document.getElementById('filtro-hasta').value = '';
+      cargarHistorial();
+    });
+
+    // ==================== MURAL ====================
+    document.getElementById('form-mural').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const contenido = document.getElementById('contenido-mural').value.trim();
+      const prioridad = document.getElementById('prioridad-mural').value;
+      if (!contenido || !currentUser) return;
+      const { error } = await supabaseClient.from('mural').insert([{ contenido, prioridad, user_id: currentUser.id }]);
+      if (!error) {
+        document.getElementById('contenido-mural').value = '';
+        cargarAlertasMural();
+        showToast('📌 Nota publicada en el mural.', 'success');
+      } else alert('Error al publicar.');
+    });
+
+    async function cargarAlertasMural() {
+      if (!currentUser) return;
+      const { data, error } = await supabaseClient.from('mural').select('*').order('created_at', { ascending: false });
+      const contenedor = document.getElementById('alertas-mural');
+      if (error || !data.length) { contenedor.innerHTML = ''; return; }
+
+      let html = '';
+      data.forEach(post => {
+        const clase = post.prioridad === 'Muy Urgente' ? 'muy-urgente' : (post.prioridad === 'Urgente' ? 'urgente' : 'normal');
+        html += `<div class="alert-card ${clase}"><span class="priority-badge">${post.prioridad}</span><p class="mt-2 mb-1">${post.contenido}</p><div class="d-flex gap-2 mt-2"><button class="btn btn-sm btn-primary tomar-btn" data-id="${post.id}"><i class="bi bi-check2-circle me-1"></i>Tomar atención</button><button class="btn btn-sm btn-outline-secondary cerrar-btn" data-id="${post.id}"><i class="bi bi-x-circle me-1"></i>Descartar</button></div></div>`;
+      });
+      contenedor.innerHTML = html;
+
+      contenedor.querySelectorAll('.tomar-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const post = data.find(p => p.id === this.getAttribute('data-id'));
+          if (post) {
+            document.querySelector('[data-bs-target="#atencion"]').click();
+            resetForm();
+            actividadInput.value = post.contenido;
+            prioridadInput.value = post.prioridad;
+            fechaInput.value = getFechaHoy();
+            muralIdInput.value = post.id;
+            formTitle.textContent = 'Nueva Atención desde Mural';
+          }
+        });
+      });
+      contenedor.querySelectorAll('.cerrar-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+          await supabaseClient.from('mural').delete().eq('id', this.getAttribute('data-id'));
+          cargarAlertasMural();
+          showToast('🗑️ Nota descartada del mural.', 'warning');
+        });
+      });
+    }
+
+    // ==================== EXPORTAR EXCEL CON FILTRO Y NOMBRE PERSONALIZADO ====================
+    document.getElementById('btn-xlsx').addEventListener('click', async () => {
+      if (!currentUser) return;
+      const desde = document.getElementById('exp-desde').value;
+      const hasta = document.getElementById('exp-hasta').value;
+      let query = supabaseClient.from('atenciones').select('*').order('fecha', { ascending: false });
+      if (desde) query = query.gte('fecha', desde);
+      if (hasta) query = query.lte('fecha', hasta);
+      const { data, error } = await query;
+      if (error || !data) { alert('Error al generar reporte.'); return; }
+      if (data.length === 0) { alert('No hay datos en el rango seleccionado.'); return; }
+
+      const datos = data.map(row => ({
+        'Unidad/Departamento': (row.unidad_departamento || ''), // se mantiene como fue digitado
+        'Fecha': formatearFecha(row.fecha),
+        'Actividad': (row.actividad || ''), // original
+        'Prioridad': (row.prioridad || 'Normal'),
+        'Estado': (row.estado || 'Atendido')
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(datos);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Actividades");
+      // Formato del nombre: Actividades Loc Juan Carlos Condor al DD-MM-YYYY.xlsx
+      const fechaActual = new Date();
+      const dd = String(fechaActual.getDate()).padStart(2, '0');
+      const mm = String(fechaActual.getMonth() + 1).padStart(2, '0');
+      const yyyy = fechaActual.getFullYear();
+      const nombreArchivo = `Actividades Loc Juan Carlos Condor al ${dd}-${mm}-${yyyy}.xlsx`;
+      XLSX.writeFile(wb, nombreArchivo);
+      showToast('📊 Reporte generado exitosamente.', 'success');
+    });
+  </script>
+</body>
+</html>
