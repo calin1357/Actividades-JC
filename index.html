@@ -8,6 +8,8 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
   <style>
     :root {
       --bg: #f1f3f4;
@@ -45,7 +47,7 @@
     }
     body {
       background: var(--bg);
-      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       color: var(--text);
       min-height: 100vh;
       margin: 0;
@@ -67,15 +69,32 @@
       border-bottom: 1px solid var(--border);
       padding: 0.5rem 1rem;
     }
-    .navbar-formal .navbar-brand { color: var(--primary); font-weight: 600; }
-    .nav-tabs .nav-link { color: var(--text-secondary); border: none; border-radius: 8px; }
-    .nav-tabs .nav-link.active { background: #e8f0fe; color: var(--primary); }
+    .navbar-formal .navbar-brand { color: var(--primary); font-weight: 600; font-size: 1.2rem; }
+    .nav-tabs .nav-link {
+      color: var(--text-secondary);
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font-weight: 500;
+    }
+    .nav-tabs .nav-link.active {
+      background: #e8f0fe;
+      color: var(--primary);
+    }
     body.dark-mode .nav-tabs .nav-link.active { background: rgba(138,180,248,0.15); }
     .btn-primary { background: var(--primary); border: none; border-radius: 8px; }
     .btn-primary:hover { background: var(--primary-hover); }
     .btn-success { background: var(--success); border: none; border-radius: 8px; }
     .btn-success:hover { background: var(--success-hover); }
-    .btn-outline-primary { border: 1px solid var(--primary); color: var(--primary); background: transparent; border-radius: 8px; }
+    .btn-danger { background: var(--danger); border: none; border-radius: 8px; }
+    .btn-danger:hover { background: var(--danger-hover); }
+    .btn-outline-primary {
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      background: transparent;
+      border-radius: 8px;
+      font-weight: 500;
+    }
     .form-control, .form-select {
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -83,16 +102,50 @@
       background: var(--card-bg);
       color: var(--text);
     }
-    .form-control:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,115,232,0.2); }
-    .table-formal { width: 100%; border-collapse: separate; border-spacing: 0; color: var(--text); }
-    .table-formal th { background: var(--table-header-bg); color: var(--text-secondary); font-weight: 600; font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid var(--border); padding: 0.75rem 1rem; }
-    .table-formal td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26,115,232,0.2);
+    }
+    .table-formal {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      color: var(--text);
+    }
+    .table-formal th {
+      background: var(--table-header-bg);
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      border-bottom: 2px solid var(--border);
+      padding: 0.75rem 1rem;
+    }
+    .table-formal td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
     .alert-panel { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
-    .alert-card { background: var(--card-bg); border-radius: 12px; box-shadow: var(--shadow); padding: 1.2rem; min-width: 280px; flex: 1 1 300px; border-left: 5px solid; }
+    .alert-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 1.2rem;
+      min-width: 280px;
+      flex: 1 1 300px;
+      border-left: 5px solid;
+    }
     .alert-card.normal { border-left-color: var(--success); }
     .alert-card.urgente { border-left-color: var(--warning); }
     .alert-card.muy-urgente { border-left-color: var(--danger); }
-    .priority-badge { display: inline-block; padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .priority-badge {
+      display: inline-block;
+      padding: 0.2rem 0.7rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
     .alert-card.normal .priority-badge { background: #e6f4ea; color: #0d904f; }
     .alert-card.urgente .priority-badge { background: #fef7e0; color: #ea8600; }
     .alert-card.muy-urgente .priority-badge { background: #fce8e6; color: #c5221f; }
@@ -100,21 +153,45 @@
     body.dark-mode .alert-card.urgente .priority-badge { background: rgba(253,214,99,0.2); color: #ffda6a; }
     body.dark-mode .alert-card.muy-urgente .priority-badge { background: rgba(242,139,130,0.2); color: #f28b82; }
     .login-container { max-width: 450px; margin: 60px auto; }
-    .theme-toggle { background: none; border: 1px solid var(--border); border-radius: 50%; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text); }
-    .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 1050; }
+    .theme-toggle {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 38px;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      min-width: 250px;
+      z-index: 1055;
+      background: var(--card-bg);
+      color: var(--text);
+      border-left: 4px solid var(--success);
+      box-shadow: var(--shadow);
+      border-radius: 8px;
+      padding: 1rem;
+      transition: opacity 0.3s;
+    }
+    .toast.error { border-left-color: var(--danger); }
   </style>
 </head>
 <body>
 
-  <!-- LOGIN -->
+  <!-- LOGIN / REGISTRO -->
   <div id="auth-container" class="container">
-    <!-- ... (mismo login que antes, sin cambios) ... -->
     <div class="login-container">
       <div class="card-formal text-center">
         <div class="mb-3"><i class="bi bi-headset" style="font-size: 2.5rem; color: var(--primary);"></i></div>
-        <h3 style="font-weight:600;">Soporte Técnico</h3>
+        <h3 style="font-weight: 600;">Soporte Técnico</h3>
         <div id="connection-status" class="mb-3 small"></div>
-        <ul class="nav nav-pills justify-content-center mb-3">
+        <ul class="nav nav-pills justify-content-center mb-3" id="authTabs">
           <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#login">Iniciar Sesión</button></li>
           <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#register">Registrarse</button></li>
         </ul>
@@ -191,24 +268,20 @@
             </form>
           </div>
         </div>
-        <!-- Historial -->
+
+        <!-- Historial con filtro -->
         <div class="tab-pane fade" id="historial">
           <div class="card-formal">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h4 class="mb-0" style="font-weight:600;">Mis Atenciones</h4>
-              <!-- Filtro de fechas -->
-              <div class="d-flex align-items-center gap-2">
-                <label class="form-label mb-0">Desde:</label>
-                <input type="date" id="filtro-desde" class="form-control form-control-sm" style="width:150px;">
-                <label class="form-label mb-0">Hasta:</label>
-                <input type="date" id="filtro-hasta" class="form-control form-control-sm" style="width:150px;">
-                <button class="btn btn-sm btn-outline-primary" id="btn-filtrar"><i class="bi bi-funnel me-1"></i>Filtrar</button>
-                <button class="btn btn-sm btn-outline-secondary" id="btn-limpiar-filtro">Limpiar</button>
-              </div>
+            <h4 class="mb-3" style="font-weight:600;">Mis Atenciones</h4>
+            <div class="row g-2 mb-3">
+              <div class="col-md-4"><label class="form-label">Desde</label><input type="date" class="form-control" id="filtro-desde-historial"></div>
+              <div class="col-md-4"><label class="form-label">Hasta</label><input type="date" class="form-control" id="filtro-hasta-historial"></div>
+              <div class="col-md-4 d-flex align-items-end"><button class="btn btn-primary w-100" id="aplicar-filtro-historial">Filtrar</button></div>
             </div>
             <div id="lista-atenciones"></div>
           </div>
         </div>
+
         <!-- Mural -->
         <div class="tab-pane fade" id="mural">
           <div class="card-formal">
@@ -220,44 +293,30 @@
             </form>
           </div>
         </div>
+
         <!-- Exportar -->
         <div class="tab-pane fade" id="reporte">
           <div class="card-formal">
             <h4 class="mb-3" style="font-weight:600;">Exportar Atenciones</h4>
-            <p class="text-secondary">Selecciona el rango de fechas y descarga el reporte en Excel.</p>
-            <div class="row g-3 mb-3">
-              <div class="col-md-5">
-                <label class="form-label">Desde:</label>
-                <input type="date" id="exp-desde" class="form-control">
-              </div>
-              <div class="col-md-5">
-                <label class="form-label">Hasta:</label>
-                <input type="date" id="exp-hasta" class="form-control">
-              </div>
-              <div class="col-md-2 d-flex align-items-end">
-                <button class="btn btn-success w-100" id="btn-xlsx"><i class="bi bi-download me-1"></i>Descargar</button>
+            <p class="text-secondary">Seleccione el rango de fechas y el formato deseado.</p>
+            <div class="row g-2 mb-3">
+              <div class="col-md-4"><label class="form-label">Desde</label><input type="date" class="form-control" id="filtro-desde-reporte" max=""></div>
+              <div class="col-md-4"><label class="form-label">Hasta</label><input type="date" class="form-control" id="filtro-hasta-reporte" min="" max=""></div>
+              <div class="col-md-4 d-flex align-items-end gap-2">
+                <button class="btn btn-success" id="btn-excel"><i class="bi bi-file-earmark-excel me-1"></i>Excel</button>
+                <button class="btn btn-danger" id="btn-pdf"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</button>
               </div>
             </div>
-            <small class="text-muted">Si no selecciona fechas, se exportarán todas las atenciones.</small>
+            <div id="msg-reporte" class="mt-2 small"></div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Toast de notificaciones -->
-  <div class="toast-container">
-    <div id="liveToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-      <div class="d-flex">
-        <div class="toast-body" id="toast-message"></div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Cerrar"></button>
-      </div>
-    </div>
-  </div>
-
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // ==================== CONFIGURACIÓN ====================
+    // ========== CONFIGURACIÓN ==========
     const SUPABASE_URL = 'https://ehonufkjsyrytgoramgg.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_-lpXWdjSUS1TDUQYUuhtlQ_veWqhDl6';
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -268,7 +327,7 @@
     const statusDiv = document.getElementById('connection-status');
     let currentUser = null;
 
-    // ==================== TEMA ====================
+    // ========== TEMA ==========
     const themeToggleBtn = document.getElementById('theme-toggle-btn');
     function setTheme(isDark) {
       if (isDark) {
@@ -281,33 +340,33 @@
         localStorage.setItem('theme', 'light');
       }
     }
-    // Por defecto, tema claro
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') setTheme(true);
-    else setTheme(false); // Si no hay preferencia, claro
+    else setTheme(false); // blanco por defecto
     themeToggleBtn.addEventListener('click', () => setTheme(!document.body.classList.contains('dark-mode')));
 
-    // ==================== TOAST DE NOTIFICACIÓN ====================
-    const toastElement = document.getElementById('liveToast');
-    const toastMessage = document.getElementById('toast-message');
-    const bsToast = new bootstrap.Toast(toastElement, { delay: 3000 });
-    function showToast(message, type = 'success') {
-      toastMessage.textContent = message;
-      toastElement.className = `toast align-items-center text-bg-${type} border-0`;
-      bsToast.show();
+    // ========== TOAST ==========
+    function mostrarToast(mensaje, esError = false) {
+      const toast = document.createElement('div');
+      toast.className = `toast ${esError ? 'error' : ''}`;
+      toast.textContent = mensaje;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
     }
 
-    // ==================== CONEXIÓN ====================
+    // ========== CONEXIÓN ==========
     (async () => {
       statusDiv.innerHTML = '<span class="text-muted">Verificando conexión...</span>';
       try {
         const { error } = await supabaseClient.auth.getSession();
         if (error) throw error;
         statusDiv.innerHTML = '<span class="text-success">Conectado</span>';
-      } catch (err) { statusDiv.innerHTML = `<span class="text-danger">Error: ${err.message}</span>`; }
+      } catch (err) {
+        statusDiv.innerHTML = `<span class="text-danger">Error: ${err.message}</span>`;
+      }
     })();
 
-    // ==================== AUTENTICACIÓN ====================
+    // ========== AUTENTICACIÓN ==========
     async function login() {
       const email = document.getElementById('login-email').value.trim();
       const password = document.getElementById('login-password').value.trim();
@@ -324,9 +383,16 @@
       const errorDiv = document.getElementById('reg-error');
       errorDiv.textContent = '';
       if (!email || !dni || dni.length !== 8) { errorDiv.textContent = 'Ingrese un correo válido y DNI de 8 dígitos.'; return; }
-      const { error } = await supabaseClient.auth.signUp({ email, password: dni, options: { data: { dni: dni } } });
+      const { error } = await supabaseClient.auth.signUp({
+        email,
+        password: dni,
+        options: { data: { dni: dni } }
+      });
       if (error) errorDiv.textContent = 'Error al registrar.';
-      else { alert('Cuenta creada. Ahora inicie sesión.'); document.querySelector('[data-bs-target="#login"]').click(); }
+      else {
+        alert('Cuenta creada. Ahora inicie sesión.');
+        document.querySelector('[data-bs-target="#login"]').click();
+      }
     }
 
     async function logout() { await supabaseClient.auth.signOut(); }
@@ -336,11 +402,9 @@
       userInfo.textContent = `DNI: ${user.user_metadata?.dni || ''}`;
       authContainer.classList.add('hidden');
       appContainer.classList.remove('hidden');
+      inicializarExportTab();
       cargarAlertasMural();
-      cargarHistorial(); // cargará con el filtro por defecto (todas)
-      // Inicializar fechas del filtro con valores vacíos (para mostrar todas)
-      document.getElementById('filtro-desde').value = '';
-      document.getElementById('filtro-hasta').value = '';
+      cargarHistorial();
     }
 
     function ocultarDashboard() {
@@ -363,7 +427,7 @@
     document.getElementById('register-btn').addEventListener('click', register);
     document.getElementById('logout-btn').addEventListener('click', logout);
 
-    // ==================== FUNCIONES AUXILIARES ====================
+    // ========== FECHAS ==========
     function formatearFecha(fechaStr) {
       if (!fechaStr) return '';
       const [year, month, day] = fechaStr.split('-');
@@ -377,7 +441,48 @@
       return `${anio}-${mes}-${dia}`;
     }
 
-    // ==================== ATENCIONES ====================
+    // ========== INICIALIZAR PESTAÑA EXPORTAR ==========
+    function inicializarExportTab() {
+      const hoy = getFechaHoy();
+      const inputDesde = document.getElementById('filtro-desde-reporte');
+      const inputHasta = document.getElementById('filtro-hasta-reporte');
+
+      // Establecer valores y límites
+      inputDesde.value = hoy;
+      inputDesde.max = hoy;
+
+      inputHasta.value = hoy;
+      inputHasta.min = hoy;
+      inputHasta.max = hoy;
+
+      // Sincronizar restricciones cuando cambie "desde"
+      inputDesde.addEventListener('change', () => {
+        const desdeVal = inputDesde.value;
+        if (desdeVal) {
+          inputHasta.min = desdeVal;
+          // Si la fecha "hasta" es anterior a la nueva "desde", ajustarla
+          if (inputHasta.value && inputHasta.value < desdeVal) {
+            inputHasta.value = desdeVal;
+          }
+        }
+      });
+
+      // Validar que "hasta" no sea anterior a "desde" ni mayor a hoy
+      inputHasta.addEventListener('change', () => {
+        const hastaVal = inputHasta.value;
+        const desdeVal = inputDesde.value;
+        if (hastaVal && desdeVal && hastaVal < desdeVal) {
+          inputHasta.value = desdeVal;
+          mostrarToast('La fecha final no puede ser anterior a la inicial.', true);
+        }
+        if (hastaVal > getFechaHoy()) {
+          inputHasta.value = getFechaHoy();
+          mostrarToast('La fecha final no puede ser superior a hoy.', true);
+        }
+      });
+    }
+
+    // ========== ATENCIONES ==========
     const formAtencion = document.getElementById('form-atencion');
     const editIdInput = document.getElementById('edit-id');
     const muralIdInput = document.getElementById('mural-id');
@@ -431,7 +536,7 @@
     formAtencion.addEventListener('submit', async (e) => {
       e.preventDefault();
       const unidad = unidadInput.value.trim();
-      const actividad = actividadInput.value.trim(); // respeta mayúsculas/minúsculas
+      const actividad = actividadInput.value.trim();
       const fecha = fechaInput.value;
       const prioridad = prioridadInput.value;
       const estado = estadoInput.value;
@@ -450,75 +555,50 @@
       if (!currentUser) return;
 
       const datos = {
-        servicio: servicio,
-        unidad_departamento: unidad,
-        actividad: actividad,
-        fecha: fecha,
-        prioridad: prioridad,
-        estado: estado,
+        servicio, unidad_departamento: unidad, actividad, fecha, prioridad, estado,
         user_id: currentUser.id
       };
-
       let error = null;
-      let mensaje = '';
       if (editId) {
         const { error: updateError } = await supabaseClient
-          .from('atenciones')
-          .update(datos)
-          .eq('id', editId)
-          .eq('user_id', currentUser.id);
+          .from('atenciones').update(datos).eq('id', editId).eq('user_id', currentUser.id);
         error = updateError;
-        mensaje = '✅ Atención actualizada correctamente.';
+        if (!error) mostrarToast('✅ Atención actualizada correctamente.');
       } else {
         const { error: insertError } = await supabaseClient
-          .from('atenciones')
-          .insert([datos]);
+          .from('atenciones').insert([datos]);
         error = insertError;
-        mensaje = '✅ Atención registrada correctamente.';
+        if (!error) mostrarToast('✅ Atención registrada exitosamente.');
       }
 
-      if (error) {
-        msgDiv.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
-        showToast('Error al guardar: ' + error.message, 'danger');
-      } else {
+      if (error) msgDiv.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+      else {
         if (muralId) await supabaseClient.from('mural').delete().eq('id', muralId);
-        msgDiv.innerHTML = `<span class="text-success">${mensaje}</span>`;
-        showToast(mensaje.replace('✅ ', ''), 'success');
         resetForm();
         cargarAlertasMural();
-        cargarHistorial(); // respetará el filtro actual
+        cargarHistorial();
       }
     });
 
     async function eliminarAtencion(id) {
       if (!confirm('¿Eliminar esta atención?')) return;
       const { error } = await supabaseClient.from('atenciones').delete().eq('id', id).eq('user_id', currentUser.id);
-      if (error) {
-        showToast('Error al eliminar: ' + error.message, 'danger');
-      } else {
-        showToast('🗑️ Atención eliminada.', 'warning');
+      if (error) alert('Error al eliminar.');
+      else {
+        mostrarToast('🗑️ Atención eliminada.');
         cargarHistorial();
       }
     }
 
-    // ==================== HISTORIAL CON FILTRO ====================
     async function cargarHistorial(filtroDesde = null, filtroHasta = null) {
       if (!currentUser) return;
-      let query = supabaseClient
-        .from('atenciones')
-        .select('*')
-        .order('fecha', { ascending: false });
-
-      // Aplicar filtros si se proporcionan (o leer de los campos)
-      const desde = filtroDesde || document.getElementById('filtro-desde').value;
-      const hasta = filtroHasta || document.getElementById('filtro-hasta').value;
-      if (desde) query = query.gte('fecha', desde);
-      if (hasta) query = query.lte('fecha', hasta);
-
+      let query = supabaseClient.from('atenciones').select('*').order('fecha', { ascending: false });
+      if (filtroDesde) query = query.gte('fecha', filtroDesde);
+      if (filtroHasta) query = query.lte('fecha', filtroHasta);
       const { data, error } = await query;
       const contenedor = document.getElementById('lista-atenciones');
       if (error) { contenedor.innerHTML = '<p class="text-danger">Error</p>'; return; }
-      if (!data.length) { contenedor.innerHTML = '<p class="text-muted">No hay atenciones en este rango.</p>'; return; }
+      if (!data.length) { contenedor.innerHTML = '<p class="text-muted">No hay atenciones registradas.</p>'; return; }
 
       let html = `<table class="table-formal"><thead><tr><th>Fecha</th><th>Unidad</th><th>Actividad</th><th>Prioridad</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>`;
       data.forEach(row => {
@@ -537,7 +617,6 @@
       html += '</tbody></table>';
       contenedor.innerHTML = html;
 
-      // Eventos
       contenedor.querySelectorAll('.edit-btn').forEach(btn => {
         btn.addEventListener('click', function() {
           const atencion = data.find(item => item.id === this.getAttribute('data-id'));
@@ -552,17 +631,13 @@
       });
     }
 
-    // Botones de filtro
-    document.getElementById('btn-filtrar').addEventListener('click', () => {
-      cargarHistorial();
-    });
-    document.getElementById('btn-limpiar-filtro').addEventListener('click', () => {
-      document.getElementById('filtro-desde').value = '';
-      document.getElementById('filtro-hasta').value = '';
-      cargarHistorial();
+    document.getElementById('aplicar-filtro-historial').addEventListener('click', () => {
+      const desde = document.getElementById('filtro-desde-historial').value;
+      const hasta = document.getElementById('filtro-hasta-historial').value;
+      cargarHistorial(desde || null, hasta || null);
     });
 
-    // ==================== MURAL ====================
+    // ========== MURAL ==========
     document.getElementById('form-mural').addEventListener('submit', async (e) => {
       e.preventDefault();
       const contenido = document.getElementById('contenido-mural').value.trim();
@@ -572,7 +647,7 @@
       if (!error) {
         document.getElementById('contenido-mural').value = '';
         cargarAlertasMural();
-        showToast('📌 Nota publicada en el mural.', 'success');
+        mostrarToast('📌 Nota publicada en el mural.');
       } else alert('Error al publicar.');
     });
 
@@ -581,14 +656,12 @@
       const { data, error } = await supabaseClient.from('mural').select('*').order('created_at', { ascending: false });
       const contenedor = document.getElementById('alertas-mural');
       if (error || !data.length) { contenedor.innerHTML = ''; return; }
-
       let html = '';
       data.forEach(post => {
         const clase = post.prioridad === 'Muy Urgente' ? 'muy-urgente' : (post.prioridad === 'Urgente' ? 'urgente' : 'normal');
         html += `<div class="alert-card ${clase}"><span class="priority-badge">${post.prioridad}</span><p class="mt-2 mb-1">${post.contenido}</p><div class="d-flex gap-2 mt-2"><button class="btn btn-sm btn-primary tomar-btn" data-id="${post.id}"><i class="bi bi-check2-circle me-1"></i>Tomar atención</button><button class="btn btn-sm btn-outline-secondary cerrar-btn" data-id="${post.id}"><i class="bi bi-x-circle me-1"></i>Descartar</button></div></div>`;
       });
       contenedor.innerHTML = html;
-
       contenedor.querySelectorAll('.tomar-btn').forEach(btn => {
         btn.addEventListener('click', function() {
           const post = data.find(p => p.id === this.getAttribute('data-id'));
@@ -607,42 +680,132 @@
         btn.addEventListener('click', async function() {
           await supabaseClient.from('mural').delete().eq('id', this.getAttribute('data-id'));
           cargarAlertasMural();
-          showToast('🗑️ Nota descartada del mural.', 'warning');
         });
       });
     }
 
-    // ==================== EXPORTAR EXCEL CON FILTRO Y NOMBRE PERSONALIZADO ====================
-    document.getElementById('btn-xlsx').addEventListener('click', async () => {
-      if (!currentUser) return;
-      const desde = document.getElementById('exp-desde').value;
-      const hasta = document.getElementById('exp-hasta').value;
-      let query = supabaseClient.from('atenciones').select('*').order('fecha', { ascending: false });
-      if (desde) query = query.gte('fecha', desde);
-      if (hasta) query = query.lte('fecha', hasta);
+    // ========== EXPORTACIÓN ==========
+    async function obtenerDatosReporte() {
+      if (!currentUser) return [];
+      const desde = document.getElementById('filtro-desde-reporte').value;
+      const hasta = document.getElementById('filtro-hasta-reporte').value;
+      if (!desde || !hasta) {
+        mostrarToast('Seleccione ambas fechas del rango.', true);
+        return [];
+      }
+      if (hasta < desde) {
+        mostrarToast('La fecha final no puede ser anterior a la inicial.', true);
+        return [];
+      }
+      if (hasta > getFechaHoy() || desde > getFechaHoy()) {
+        mostrarToast('Las fechas no pueden ser futuras.', true);
+        return [];
+      }
+      let query = supabaseClient.from('atenciones').select('*').order('fecha', { ascending: true });
+      query = query.gte('fecha', desde).lte('fecha', hasta);
       const { data, error } = await query;
-      if (error || !data) { alert('Error al generar reporte.'); return; }
-      if (data.length === 0) { alert('No hay datos en el rango seleccionado.'); return; }
+      if (error) {
+        mostrarToast('Error al obtener datos del reporte.', true);
+        return [];
+      }
+      return data;
+    }
 
-      const datos = data.map(row => ({
-        'Unidad/Departamento': (row.unidad_departamento || ''), // se mantiene como fue digitado
-        'Fecha': formatearFecha(row.fecha),
-        'Actividad': (row.actividad || ''), // original
-        'Prioridad': (row.prioridad || 'Normal'),
-        'Estado': (row.estado || 'Atendido')
-      }));
+    function obtenerRangoFechas() {
+      return {
+        desde: document.getElementById('filtro-desde-reporte').value,
+        hasta: document.getElementById('filtro-hasta-reporte').value
+      };
+    }
 
-      const ws = XLSX.utils.json_to_sheet(datos);
+    // EXCEL
+    document.getElementById('btn-excel').addEventListener('click', async () => {
+      const data = await obtenerDatosReporte();
+      if (!data.length) {
+        mostrarToast('No hay atenciones en el rango seleccionado.', true);
+        return;
+      }
+      const { desde, hasta } = obtenerRangoFechas();
+      const periodo = `${formatearFecha(desde)} - ${formatearFecha(hasta)}`;
+      const titulo = `ACTIVIDADES DESARROLLADAS POR EL LOC. JUAN CARLOS CONDOR IRIGOIN EN EL PERIODO DE ${periodo}`;
+
+      const ws_data = [
+        [titulo],
+        ['Fecha', 'Unidad/Departamento', 'Actividad', 'Prioridad', 'Estado']
+      ];
+      data.forEach(row => {
+        ws_data.push([
+          formatearFecha(row.fecha),
+          row.unidad_departamento,
+          row.actividad,
+          row.prioridad || 'Normal',
+          row.estado || 'Atendido'
+        ]);
+      });
+
       const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+      // Combinar celdas para el título (A1:E1)
+      ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 4 } }];
+      ws['!cols'] = [
+        { wch: 15 },
+        { wch: 30 },
+        { wch: 60 },
+        { wch: 15 },
+        { wch: 15 }
+      ];
+
       XLSX.utils.book_append_sheet(wb, ws, "Actividades");
-      // Formato del nombre: Actividades Loc Juan Carlos Condor al DD-MM-YYYY.xlsx
-      const fechaActual = new Date();
-      const dd = String(fechaActual.getDate()).padStart(2, '0');
-      const mm = String(fechaActual.getMonth() + 1).padStart(2, '0');
-      const yyyy = fechaActual.getFullYear();
-      const nombreArchivo = `Actividades Loc Juan Carlos Condor al ${dd}-${mm}-${yyyy}.xlsx`;
-      XLSX.writeFile(wb, nombreArchivo);
-      showToast('📊 Reporte generado exitosamente.', 'success');
+      XLSX.writeFile(wb, `Actividades Loc Juan Carlos Condor al ${getFechaHoy().replace(/-/g, '')}.xlsx`);
+      mostrarToast('📊 Reporte Excel generado correctamente.');
+    });
+
+    // PDF
+    document.getElementById('btn-pdf').addEventListener('click', async () => {
+      const data = await obtenerDatosReporte();
+      if (!data.length) {
+        mostrarToast('No hay atenciones en el rango seleccionado.', true);
+        return;
+      }
+      const { desde, hasta } = obtenerRangoFechas();
+      const periodo = `${formatearFecha(desde)} - ${formatearFecha(hasta)}`;
+      const titulo = `ACTIVIDADES DESARROLLADAS POR EL LOC. JUAN CARLOS CONDOR IRIGOIN EN EL PERIODO DE ${periodo}`;
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('landscape', 'mm', 'a4');
+      const pageWidth = doc.internal.pageSize.width;
+
+      // Función para centrar y autoajustar tamaño de fuente
+      doc.setFontSize(14);
+      let fontSize = 14;
+      doc.setFontSize(fontSize);
+      while (doc.getTextWidth(titulo) > pageWidth - 20 && fontSize > 8) {
+        fontSize--;
+        doc.setFontSize(fontSize);
+      }
+      doc.text(titulo, pageWidth / 2, 15, { align: 'center' });
+
+      const rows = data.map(row => [
+        formatearFecha(row.fecha),
+        row.unidad_departamento,
+        row.actividad,
+        row.prioridad || 'Normal',
+        row.estado || 'Atendido'
+      ]);
+
+      doc.autoTable({
+        head: [['Fecha', 'Unidad/Departamento', 'Actividad', 'Prioridad', 'Estado']],
+        body: rows,
+        startY: 25,
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [26, 115, 232] },
+        alternateRowStyles: { fillColor: [241, 243, 244] },
+        margin: { top: 30 }
+      });
+
+      doc.save(`Actividades Loc Juan Carlos Condor al ${getFechaHoy().replace(/-/g, '')}.pdf`);
+      mostrarToast('📄 Reporte PDF generado correctamente.');
     });
   </script>
 </body>
